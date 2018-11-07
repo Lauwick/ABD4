@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ObjectDoesNotExist
 # Create your models here.
 
 
@@ -8,20 +9,69 @@ class Theme(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        verbose_name = 'Thème'
+
+
+class ThemePriority(models.Model):
+    game = models.ForeignKey(
+        'vdm.Game',
+        verbose_name='Jeu',
+        related_name='jeu',
+        null=False,
+        on_delete=models.CASCADE
+    )
+    theme = models.ForeignKey(
+        'vdm.Theme',
+        verbose_name='Thème',
+        related_name='themes',
+        null=False,
+        on_delete=models.CASCADE
+    )
+    priority = models.PositiveSmallIntegerField(verbose_name='Priorité', null=False)
+
+    class Meta:
+        ordering = ('priority',)
+        verbose_name = 'Thème avec priorité'
+        verbose_name_plural = 'Thèmes avec priorités'
+
+    def __str__(self):
+        return ' '.join((self.theme.name, ' : ', str(self.priority)))
+
+    def save(self, *args, **kwargs):
+        if not self.priority:
+            try:
+                nb = ThemePriority.objects.filter(game=self.game).count()
+                self.priority = nb + 1
+            except ObjectDoesNotExist:
+                nb = 1
+        super(ThemePriority, self).save()
+
 
 class Game(models.Model):
     name = models.CharField('Name', max_length=50, unique=True, null=False)
-    theme = models.ForeignKey(
+    themes = models.ManyToManyField(
         'vdm.Theme',
         verbose_name='Thème',
         related_name='jeux',
         null=False,
-        on_delete=models.CASCADE
+        symmetrical=True,
+        through='vdm.ThemePriority'
     )
     vr = models.BooleanField(verbose_name='Réalité Virtuelle', default=False)
 
     def __str__(self):
         return self.name
+
+    def get_main_theme(self):
+        return self.themes.first()
+    get_main_theme.short_description = 'Thème principal'
+
+    main_theme = property(get_main_theme)
+
+    class Meta:
+        verbose_name = 'Jeu'
+        verbose_name_plural = 'Jeux'
 
 
 class Slot(models.Model):
@@ -34,10 +84,15 @@ class Slot(models.Model):
     def __str__(self):
         return self.time.strftime('%Y-%m-%d : %H-%M')
 
+    class Meta:
+        ordering = ('time',)
+        verbose_name = 'Créneau'
+        verbose_name_plural = 'Créneaux'
+
 
 class Tarif(models.Model):
-    name = models.CharField('Name', max_length=50, unique=True, null=False)
-    amount = models.DecimalField(max_digits=9, decimal_places=2)
+    name = models.CharField('Nom', max_length=50, unique=True, null=False)
+    amount = models.DecimalField(verbose_name='Prix', max_digits=9, decimal_places=2)
 
     def __str__(self):
         return self.name
@@ -81,6 +136,9 @@ class Spectator(models.Model):
     def __str__(self):
         return ' '.join((self.client.__str__(), ' : ', self.tarif.__str__()))
 
+    class Meta:
+        verbose_name = 'Spectateur'
+
 
 class Reservation(models.Model):
     game = models.ForeignKey(
@@ -103,6 +161,10 @@ class Reservation(models.Model):
         related_name='reservations',
         null=False
     )
+
+    class Meta:
+        verbose_name = 'Réservation'
+        order_with_respect_to = 'slot'
 
     def __str__(self):
         return ' '.join((self.game.__str__(), self.slot.__str__()))
