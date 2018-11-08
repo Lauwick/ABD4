@@ -18,5 +18,6 @@ def ReservationView(request, version):
         serializer = ReservationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
+            print('--- Everything worked just fine ---')
             return Response(status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

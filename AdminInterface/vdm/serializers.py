@@ -58,16 +58,19 @@ class ReservationSerializer(serializers.BaseSerializer):
     Reservation = serializers.ListField(child=PurchaseSerializer())
 
     def to_internal_value(self, data):
-        obj = data
-        if not obj['Acheteur']:
+        pp = pprint.PrettyPrinter(indent=4)
+        if not data['Acheteur']:
+            pp.pprint(data)
             raise serializers.ValidationError({
                 'Acheteur': 'This field is required.'
             })
-        if not obj['Reservation']:
+        if not data['Reservation']:
+            pp.pprint(data)
             raise serializers.ValidationError({
                 'Reservation': 'This field is required.'
             })
-        if not obj['Game']:
+        if not data['Game']:
+            pp.pprint(data)
             raise serializers.ValidationError({
                 'Game': 'This field is required.'
             })
@@ -84,7 +87,7 @@ class ReservationSerializer(serializers.BaseSerializer):
         validated_data = validated_data['data']
         game = self._game_from_validated_data(validated_data['Game'])
         slot = self._slot_from_validated_data(validated_data['Game'])
-        mail = validated_data['Acheteur']
+        mail = validated_data['Acheteur']['Email']
         spectators = self._spectators_from_validated_data(validated_data['Reservation'])
         reservation = vdmReservation.objects.get_or_create(game=game, slot=slot, mail=mail)[0]
         for spectator in spectators:
@@ -96,7 +99,7 @@ class ReservationSerializer(serializers.BaseSerializer):
         themes = self._themes_from_validated_data(validated_data['Themes'])
         vr = True if "Oui" == validated_data['VR'] else False
 
-        game = vdmGame.objects.get_or_create(name=name, vr=vr)[0]
+        game = vdmGame.objects.get_or_create(name=name)[0]
         game.save()
         for theme in themes:
             ThemePriority.objects.get_or_create(game=game, theme=theme)
