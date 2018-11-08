@@ -1,9 +1,19 @@
 from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
 # Create your models here.
 
 
-class Theme(models.Model):
+class MultiDbModel(models.Model):
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwarg):
+        for dbname in settings.DATABASES:
+            super(MultiDbModel, self).save(using=dbname)
+
+
+class Theme(MultiDbModel):
     name = models.CharField('Thème', max_length=50, unique=True, null=False)
 
     def __str__(self):
@@ -13,7 +23,7 @@ class Theme(models.Model):
         verbose_name = 'Thème'
 
 
-class ThemePriority(models.Model):
+class ThemePriority(MultiDbModel):
     game = models.ForeignKey(
         'vdm.Game',
         verbose_name='Jeu',
@@ -24,11 +34,11 @@ class ThemePriority(models.Model):
     theme = models.ForeignKey(
         'vdm.Theme',
         verbose_name='Thème',
-        related_name='themes',
+        related_name='theme',
         null=False,
         on_delete=models.CASCADE
     )
-    priority = models.PositiveSmallIntegerField(verbose_name='Priorité', null=False)
+    priority = models.PositiveSmallIntegerField(verbose_name='Priorité', null=False, blank=True)
 
     class Meta:
         ordering = ('priority',)
@@ -48,7 +58,7 @@ class ThemePriority(models.Model):
         super(ThemePriority, self).save()
 
 
-class Game(models.Model):
+class Game(MultiDbModel):
     name = models.CharField('Name', max_length=50, unique=True, null=False)
     themes = models.ManyToManyField(
         'vdm.Theme',
@@ -74,7 +84,7 @@ class Game(models.Model):
         verbose_name_plural = 'Jeux'
 
 
-class Slot(models.Model):
+class Slot(MultiDbModel):
     time = models.DateTimeField(null=False)
 
     @property
@@ -82,7 +92,7 @@ class Slot(models.Model):
         return self.time.strftime('%Y-%m-%d')
 
     def __str__(self):
-        return self.time.strftime('%Y-%m-%d : %H-%M')
+        return self.time.strftime('%Y-%m-%d %H:%M')
 
     class Meta:
         ordering = ('time',)
@@ -90,15 +100,15 @@ class Slot(models.Model):
         verbose_name_plural = 'Créneaux'
 
 
-class Tarif(models.Model):
-    name = models.CharField('Nom', max_length=50, unique=True, null=False)
+class Tarif(MultiDbModel):
+    name = models.CharField('Nom', max_length=50, null=False)
     amount = models.DecimalField(verbose_name='Prix', max_digits=9, decimal_places=2)
 
     def __str__(self):
         return self.name
 
 
-class Client(models.Model):
+class Client(MultiDbModel):
     CIVILITIES = (
         (0, 'Monsieur'),
         (1, 'Madame'),
@@ -117,7 +127,7 @@ class Client(models.Model):
         return self.full_name
 
 
-class Spectator(models.Model):
+class Spectator(MultiDbModel):
     tarif = models.ForeignKey(
         'vdm.Tarif',
         verbose_name='Tarif',
@@ -140,7 +150,7 @@ class Spectator(models.Model):
         verbose_name = 'Spectateur'
 
 
-class Reservation(models.Model):
+class Reservation(MultiDbModel):
     game = models.ForeignKey(
         'vdm.Game',
         verbose_name='Jeu',
@@ -159,7 +169,8 @@ class Reservation(models.Model):
     spectators = models.ManyToManyField(
         'vdm.Spectator',
         related_name='reservations',
-        null=False
+        null=False,
+        blank=True
     )
 
     class Meta:

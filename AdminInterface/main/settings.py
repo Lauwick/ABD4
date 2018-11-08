@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+from main.jsonenv import env
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -83,15 +84,35 @@ WSGI_APPLICATION = 'main.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db1.sqlite3'),
-    }, 'secondary': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db2.sqlite3'),
-    }, 'reading': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db3.sqlite3'),
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': env.get('db_name', ''),
+        'USER': env.get('db_user', ''),
+        'HOST': env.get('db_host', ''),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'PORT': '5432'
     }
+    # , 'write': {
+    #     'primary': {
+    #         'ENGINE': 'django.contrib.gis.db.backends.postgis',
+    #         'NAME': env.get('db_name', ''),
+    #         'USER': env.get('db_user', ''),
+    #         'HOST': env.get('db_host', ''),
+    #         'PASSWORD': os.getenv('DB_PASSWORD', ''),
+    #         'PORT': '5432'
+    #     }, 'secondary': {
+    #         'ENGINE': 'django.contrib.gis.db.backends.postgis',
+    #         'NAME': env.get('db_name', ''),
+    #         'USER': env.get('db_user', ''),
+    #         'HOST': env.get('db_host', ''),
+    #         'PASSWORD': os.getenv('DB_PASSWORD', ''),
+    #         'PORT': '5432'
+    #     },
+    # }, 'read': {
+    #     'reading': {
+    #         'ENGINE': 'django.db.backends.sqlite3',
+    #         'NAME': os.path.join(BASE_DIR, 'db3.sqlite3'),
+    #     }
+    # }
 }
 
 
